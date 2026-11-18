@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CANELITO — Multiverso del amor</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;600;700&family=Bebas+Neue&display=swap');
+:root{--red:#fa3152;--blue:#29b8ff;--pink:#ff9ab7}
+*{box-sizing:border-box}body{margin:0;background:#080b17;color:#fff;font-family:'Space Grotesk',sans-serif;overflow-x:hidden}
+button{font:inherit;cursor:pointer}
+#gameShell{min-height:100vh;display:grid;place-items:center;padding:18px;background:radial-gradient(ellipse at 50% 0%,#251a39,#080b17 65%)}
+#frame{width:min(1120px,100%);border:2px solid #34415c;box-shadow:0 0 0 5px #10182b,0 25px 100px #000b;background:#0b1020}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#0d1427;border-bottom:1px solid #293451;gap:10px;flex-wrap:wrap}
+.logo{font:2rem 'Bebas Neue';letter-spacing:.1em}.logo b{color:var(--red);text-shadow:3px 2px var(--blue)}
+.hud{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font:.72rem 'DM Mono';color:#b9c5dd}.hud strong{color:#fff}#livesHud{color:#ff5a7a;letter-spacing:2px}
+.mini{background:#17223c;border:1px solid #4a5b7d;color:#fff;padding:2px 8px}
+#stage{position:relative;aspect-ratio:16/9;background:#111;overflow:hidden}
+canvas{width:100%;height:100%;display:block}
+.overlay{position:absolute;inset:0;display:grid;place-items:center;padding:20px;background:linear-gradient(120deg,#090d1de6,#160c1be6);text-align:center;z-index:3;overflow:auto}
+.overlay.hidden{display:none}.modal{width:min(640px,100%);padding:clamp(22px,4vw,42px);border:1px solid #ff688877;background:linear-gradient(145deg,#141d34f5,#281225f5);box-shadow:12px 12px 0 #f43152,-7px -7px 0 #29b8ff}
+.kicker{color:#ff8ca5;font:.7rem 'DM Mono';letter-spacing:.2em;text-transform:uppercase}
+h1{font:clamp(3.3rem,9vw,6.7rem)/.82 'Bebas Neue';margin:18px 0 10px;letter-spacing:.04em;text-shadow:5px 4px #f43152,-4px -3px #168ed0}
+h1 span{color:#ffcfda}.subtitle{color:#d4d8e7;max-width:490px;margin:16px auto 24px;line-height:1.6}
+.btn{border:0;background:var(--red);color:#fff;padding:13px 23px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;box-shadow:5px 5px 0 var(--blue);transition:.15s}.btn:hover{transform:translate(2px,2px);box-shadow:3px 3px 0 var(--blue)}.btn.alt{background:#1b8dc6;box-shadow:5px 5px 0 var(--red)}
+.controls{display:flex;justify-content:center;gap:8px 16px;flex-wrap:wrap;margin-top:20px;color:#aeb9d2;font:.68rem 'DM Mono'}
+.storyText{font:clamp(1.1rem,2.6vw,1.6rem)/1.45 'Space Grotesk';max-width:600px;margin:18px auto}.storyText em{color:#ff9eb4;font-style:normal}
+.bottom{padding:10px 16px;background:#0d1427;border-top:1px solid #293451;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#8592ad;font:.65rem 'DM Mono'}
+.mobileControls{display:none;justify-content:center;gap:10px;padding:12px;background:#0d1427;touch-action:none}.mobileControls button{width:58px;height:50px;border:1px solid #4a5b7d;background:#17223c;color:#fff;font-size:1.1rem;touch-action:none;user-select:none}
+@media(max-width:650px){#gameShell{padding:0}#frame{border:0}#stage{aspect-ratio:4/3}.mobileControls{display:flex}.logo{font-size:1.6rem}.hud{font-size:.62rem;gap:8px}.bottom{font-size:.58rem}}
+</style></head>
+<body>
+<div id="gameShell"><div id="frame">
+ <header class="topbar"><div class="logo"><b>CANELITO</b> / MULTIVERSO</div><div class="hud"><span>NIVEL <strong id="levelHud">01</strong>/03</span><span>RECUERDOS <strong id="scoreHud">0</strong>/5</span><span>PUNTOS <strong id="ptsHud">0</strong></span><span id="livesHud"></span><button class="mini" id="muteBtn" title="Sonido (M)">🔊</button></div></header>
+ <div id="stage"><canvas id="c" width="960" height="540" aria-label="Videojuego de plataformas Canelito Multiverso"></canvas>
+  <div class="overlay" id="start"><div class="modal"><div class="kicker">Una aventura que aún no termina</div><h1>CANELITO<br><span>MULTIVERSO</span></h1><p class="subtitle">Millones de universos. Dos caminos que se cruzaron. Una misión: recuperar los recuerdos que hacen única esta historia.</p><button class="btn" id="startBtn">Comenzar aventura</button><div class="controls"><span>← → MOVER</span><span>ESPACIO SALTAR (¡doble salto!)</span><span>X TELARAÑA</span><span>SHIFT IMPULSO</span><span>M SONIDO</span></div></div></div>
+  <div class="overlay hidden" id="story"><div class="modal"><div class="kicker" id="storyKicker"></div><h1 id="storyTitle" style="font-size:clamp(2.4rem,6vw,4.4rem)"></h1><p class="storyText" id="storyBody"></p><button class="btn" id="storyBtn">Entrar al nivel</button></div></div>
+  <div class="overlay hidden" id="end"><div class="modal"><div class="kicker">MISIÓN COMPLETADA</div><h1>UNIVERSO<br><span>DESBLOQUEADO</span></h1><p class="storyText">No se trataba de encontrar un universo perfecto. Se trataba de recordar que <em>esta historia es nuestra</em>.</p><p class="subtitle" style="margin:6px auto" id="endPts"></p><p class="subtitle" style="margin-top:6px">Nicole & Víctor · 2025 — para siempre</p><button class="btn" id="replayBtn">Volver a jugar</button> <button class="btn alt" id="letterBtn">Leer mensaje secreto</button></div></div>
+  <div class="overlay hidden" id="letter"><div class="modal"><div class="kicker">ARCHIVO PRIVADO / NICOLE → VÍCTOR</div><h1 style="font-size:3.6rem">MI CANELITO</h1><p class="storyText" style="font-size:1rem">Sé que no siempre soy fácil, que mi carácter puede ser complicado y que a veces puedo ser difícil de entender. Pero gracias por tenerme paciencia, por no soltarme y por ser mi apoyo incluso en mis días difíciles.<br><br>Gracias por elegirme con todo y mis defectos. Quiero seguir aprendiendo a amarte mejor y ser para ti ese lugar seguro que tú eres para mí.<br><br>De todos los universos posibles, te volvería a elegir una y mil veces. Porque mi aventura favorita siempre será contigo.<br><br><em>Te amo, mi superhéroe favorito ❤️🕷️. Y esta vez quiero que juguemos todos los niveles juntos. ❤️</em></p><button class="btn" id="backBtn">Volver al multiverso</button></div></div>
+ </div>
+ <div class="mobileControls"><button data-key="ArrowLeft">◀</button><button data-key="ArrowRight">▶</button><button data-key=" ">⤒</button><button data-key="x">🕸</button><button data-key="Shift">⚡</button></div>
+ <footer class="bottom"><span>PLAYER 01: VÍCTOR</span><span>Para mi superhéroe favorito. ❤️🕷️</span><span>♥ NICOLE + VÍCTOR</span></footer>
+</div></div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d'),W=960,H=540,G=455,$=id=>document.getElementById(id);
+let mode='menu',level=0,score=0,base=0,got=0,lives=3,pts=0,keys={},P,items=[],en=[],plats=[],pits=[],shots=[],eb=[],parts=[],pops=[],cam=0,fr=0,shake=0,combo=0,comboT=0,banner='',bannerT=0,jumpReq=0,coyote=0,shotCD=0,dashT=0,dashCD=0,checkX=70,bossDead=false,muted=false;
+const levels=[
+ {name:'LA CIUDAD DEL PRIMER ENCUENTRO',kicker:'CAPÍTULO 01 · 2025',story:'Mientras intentaban unir a otras dos personas, dos caminos se cruzaron sin planearlo. A veces, la aventura más importante empieza por accidente.',sky:['#101c3b','#462044'],ground:'#1b2341',accent:'#fa3152',len:2400,deco:0,
+  plats:[[420,360,120],[700,320,140],[980,370,120],[1250,330,150],[1550,290,130],[1850,350,140],[2100,310,120]],pits:[],
+  mem:[[470,300],[770,255],[1300,265],[1610,225],[2150,250]],
+  caps:['Aquella primera conversación','La primera risa juntos','Esa mirada que dijo mucho','El primer plan improvisado','Cuando supe que eras especial'],
+  w:[620,900,1150,1450,1750,2000],f:[1350,1950]},
+ {name:'EL PORTAL DE LOS CINCO MESES',kicker:'CAPÍTULO 02 · MARZO → AGOSTO 2026',story:'Hubo una pausa, caminos separados y aprendizajes. Cinco meses después, en agosto de 2026, los universos volvieron a acercarse. Esta vez, con más cosas por comprender.',sky:['#15112e','#4b1b48'],ground:'#20203f',accent:'#29b8ff',len:2600,deco:1,
+  plats:[[350,370,110],[620,320,110],[900,280,100],[1150,340,120],[1420,300,110],[1720,350,120],[1980,300,110],[2250,340,120]],pits:[{x:520,w:130},{x:1000,w:140},{x:1560,w:130},{x:2100,w:130}],
+  mem:[[400,310],[670,260],[950,220],[1470,240],[2300,280]],
+  caps:['Las pausas también enseñan','Aprender a escuchar','Volver a hablar','Agosto 2026: el reencuentro','Empezar de nuevo, con más calma'],
+  w:[380,780,1300,1850,2380],f:[900,1650,2200]},
+ {name:'EL UNIVERSO QUE ELEGIMOS',kicker:'CAPÍTULO 03 · SIGUIENTE NIVEL',story:'No hace falta una historia perfecta. Hace falta respeto, paciencia, escucha y dos personas dispuestas a construir algo bonito, un nivel a la vez.',sky:['#10233b','#8b3553'],ground:'#25233e',accent:'#ff9ab7',len:3000,deco:2,
+  plats:[[380,370,110],[640,330,120],[920,290,110],[1200,350,120],[1480,300,120],[1760,340,110],[2000,290,120],[2440,320,100],[2700,320,100]],pits:[{x:500,w:120},{x:1050,w:140},{x:1650,w:130}],
+  mem:[[430,310],[690,270],[970,230],[1530,240],[2050,230]],
+  caps:['Respeto','Paciencia','Risas sencillas','Lugares por descubrir','Elegirnos, un nivel a la vez'],
+  w:[820,1350,1900,2150],f:[700,1400,2000],boss:2650}
+];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+/* ---------- sonido (generado, sin archivos) ---------- */
+let AC;function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}return AC}
+function snd(f,d,type='square',v=.05,sl=0){if(muted)return;const a=ac();if(!a)return;const t=a.currentTime,o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(sl)o.frequency.linearRampToValueAtTime(Math.max(30,f+sl),t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(a.destination);o.start();o.stop(t+d)}
+let step=0;setInterval(()=>{if(mode!=='play'||muted)return;const m=[0,7,3,10,5,12,7,3],n=m[step%8]+level*2;snd(220*2**(n/12),.2,'triangle',.03);if(step%2==0)snd(110*2**([0,0,5,3][(step>>1)%4]/12),.35,'sine',.05);step++},230);
+function toggleMute(){muted=!muted;$('muteBtn').textContent=muted?'🔇':'🔊'}
+$('muteBtn').onclick=e=>{toggleMute();e.target.blur()};
+/* ---------- niveles ---------- */
+function resetLevel(){const L=levels[level];P={x:70,y:G-58,vx:0,vy:0,w:30,h:58,on:false,inv:0,face:1,jumps:0};checkX=70;cam=0;got=0;score=base;bossDead=false;dashT=0;
+ plats=L.plats.map(([x,y,w])=>({x,y,w}));pits=L.pits;items=L.mem.map(([x,y],i)=>({x,y,got:false,ph:i,t:L.caps[i]}));en=[];
+ L.w.forEach(x=>en.push({t:'w',x,y:G-34,w:34,h:34,x0:x-90,x1:x+90,d:1,hp:1,ph:x,inv:0}));
+ L.f.forEach(x=>en.push({t:'f',x,y:270,by:270,w:36,h:30,x0:x-150,x1:x+150,d:1,hp:1,ph:x,inv:0}));
+ if(L.boss)en.push({t:'b',x:L.boss,y:G-110,w:90,h:110,x0:L.boss-250,x1:L.boss+150,d:-1,hp:8,mhp:8,inv:0,cd:90,ph:0});
+ shots=[];eb=[];parts=[];pops=[];combo=0;banner='Reúne los 5 recuerdos y cruza el portal';bannerT=240;updateHud();}
+function show(id){['start','story','end','letter'].forEach(x=>$(x).classList.add('hidden'));if(id)$(id).classList.remove('hidden')}
+function begin(){ac();if(AC&&AC.state==='suspended')AC.resume();level=0;score=0;base=0;pts=0;lives=3;updateHud();storyScreen()}
+function storyScreen(){mode='story';const L=levels[level];$('storyKicker').textContent=L.kicker;$('storyTitle').textContent=L.name;$('storyBody').textContent=L.story;$('storyBtn').textContent='Jugar capítulo '+(level+1);show('story')}
+$('startBtn').onclick=begin;$('replayBtn').onclick=begin;
+$('storyBtn').onclick=()=>{resetLevel();mode='play';show(null)};
+$('letterBtn').onclick=()=>{mode='letter';show('letter')};$('backBtn').onclick=()=>{mode='end';show('end')};
+function updateHud(){$('levelHud').textContent=String(level+1).padStart(2,'0');$('scoreHud').textContent=got;$('ptsHud').textContent=pts;$('livesHud').textContent='♥'.repeat(lives)+'♡'.repeat(Math.max(0,5-lives))}
+function next(){snd(520,.5,'triangle',.08,600);base=score;if(level<2){level++;updateHud();storyScreen()}else{mode='end';$('endPts').textContent='Puntos: '+pts+' · Recuerdos: '+score+'/15';show('end')}}
+/* ---------- entrada ---------- */
+const nk=k=>k.length===1?k.toLowerCase():k;
+function press(k){if(k==='m')toggleMute();if(mode!=='play')return;if(k===' '||k==='ArrowUp'||k==='w')jumpReq=7;if(k==='x'||k==='z'||k==='j')shoot();if(k==='Shift'||k==='c'||k==='k')dash()}
+addEventListener('keydown',e=>{const k=nk(e.key);if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(k))e.preventDefault();if(!e.repeat)press(k);keys[k]=true});
+addEventListener('keyup',e=>keys[nk(e.key)]=false);
+document.querySelectorAll('[data-key]').forEach(b=>{const k=b.dataset.key;b.addEventListener('pointerdown',e=>{e.preventDefault();press(k);keys[k]=true});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false))});
+function shoot(){if(shotCD>0)return;shotCD=18;shots.push({x:P.x+15+P.face*18,y:P.y+26,vx:P.face*13,l:50});snd(900,.1,'square',.04,-500)}
+function dash(){if(dashCD>0)return;dashT=9;dashCD=55;snd(300,.2,'sawtooth',.05,500)}
+/* ---------- efectos ---------- */
+function burst(x,y,c,n){for(let i=0;i<n;i++){const a=Math.random()*6.28,s=1+Math.random()*5;parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-2,l:30+Math.random()*20,c,s:2+Math.random()*4})}}
+function pop(x,y,t,c){pops.push({x,y,t,c,l:50})}
+function hitEnemy(e){if(e.inv>0)return;e.hp--;const cx=e.x+e.w/2,cy=e.y+e.h/2;
+ if(e.hp<=0){e.dead=true;combo++;comboT=160;pts+=100*Math.min(combo,5)*(e.t=='b'?10:1);pop(cx,e.y-10,combo>1?'x'+combo+' COMBO':['¡POW!','¡BAM!','¡ZAS!'][fr%3],'#ffd54a');burst(cx,cy,'#fa3152',e.t=='b'?60:22);burst(cx,cy,'#29b8ff',10);shake=e.t=='b'?28:7;snd(200,.25,'sawtooth',.08,-120);
+  if(e.t=='b'){bossDead=true;banner='¡Glitch derrotado! El portal se abrió';bannerT=240}}
+ else{e.inv=35;pop(cx,e.y-10,'¡POW!','#fff');burst(cx,cy,'#fa3152',12);shake=9;snd(260,.15,'square',.07,-100)}
+ updateHud()}
+function hurt(){if(P.inv>0)return;lives--;P.inv=110;P.vy=-8;P.vx=-P.face*6;shake=14;combo=0;burst(P.x+15,P.y+30,'#fa3152',16);snd(150,.3,'sawtooth',.1,-100);if(lives<=0){lives=3;pts=Math.max(0,pts-200);resetLevel()}updateHud()}
+function fall(){lives--;snd(200,.5,'sawtooth',.08,-170);if(lives<=0){lives=3;resetLevel();return}P.x=checkX;P.y=G-P.h;P.vy=0;P.vx=0;P.inv=100;shake=10;updateHud()}
+/* ---------- lógica ---------- */
+function update(){if(mode!=='play')return;const L=levels[level];
+ const l=keys.ArrowLeft||keys.a,r=keys.ArrowRight||keys.d;
+ if(shotCD>0)shotCD--;if(dashCD>0)dashCD--;if(P.inv>0)P.inv--;if(bannerT>0)bannerT--;if(comboT>0&&--comboT==0)combo=0;
+ if(dashT>0){dashT--;P.vx=P.face*12;P.inv=Math.max(P.inv,6);parts.push({x:P.x+15,y:P.y+30,vx:0,vy:0,l:14,c:'#29b8ff',s:10})}
+ else if(l){P.vx=-4.6;P.face=-1}else if(r){P.vx=4.6;P.face=1}else P.vx*=.75;
+ coyote=P.on?7:coyote-1;if(P.on)P.jumps=0;else if(coyote<=0&&P.jumps===0)P.jumps=1;
+ if(jumpReq>0){jumpReq--;if(coyote>0){P.vy=-12.8;P.jumps=1;coyote=0;jumpReq=0;P.on=false;snd(380,.15,'square',.05,400);burst(P.x+15,P.y+58,'#fff',6)}
+  else if(P.jumps<2){P.vy=-11.5;P.jumps=2;jumpReq=0;snd(560,.15,'square',.05,500);burst(P.x+15,P.y+58,'#29b8ff',10)}}
+ P.vy+=dashT>0?0:.6;P.x+=P.vx;P.y+=P.vy;
+ const open=got>=5&&(!L.boss||bossDead),px=L.len-90;
+ P.x=clamp(P.x,0,open?L.len-40:px-30);
+ const cx=P.x+15,foot=P.y+P.h,pf=foot-P.vy,inPit=pits.some(p=>cx>p.x+6&&cx<p.x+p.w-6),was=P.on;P.on=false;
+ if(!inPit&&foot>=G&&P.vy>=0&&pf<=G+14){P.y=G-P.h;P.vy=0;P.on=true}
+ plats.forEach(p=>{if(P.vy>=0&&cx>p.x-4&&cx<p.x+p.w+4&&pf<=p.y+4&&foot>=p.y){P.y=p.y-P.h;P.vy=0;P.on=true}});
+ if(P.on&&!was)burst(P.x+15,P.y+58,'#ffffff77',5);
+ if(P.on&&P.y+P.h===G&&!pits.some(p=>P.x+110>p.x&&P.x-80<p.x+p.w))checkX=P.x;
+ if(P.y>H+80){fall();return}
+ cam+=(clamp(P.x-300,0,L.len-W)-cam)*.12;
+ if(!open&&P.x>px-140&&bannerT<=0){banner=got<5?'Faltan '+(5-got)+' recuerdos para abrir el portal':'Derrota al Glitch de la Duda para abrir el portal';bannerT=140}
+ items.forEach(it=>{if(!it.got&&Math.abs(P.x+15-it.x)<34&&Math.abs(P.y+P.h/2-it.y)<48){it.got=true;got++;score++;pts+=250;if(lives<5)lives++;banner='♥ Recuerdo: '+it.t;bannerT=210;burst(it.x,it.y,'#ff9ab7',24);pop(it.x,it.y-20,'+250','#ff9ab7');snd(660,.12,'triangle',.07);setTimeout(()=>snd(880,.2,'triangle',.07),90);updateHud()}});
+ shots=shots.filter(s=>{s.x+=s.vx;s.l--;let hit=false;en.forEach(e=>{if(!e.dead&&!hit&&s.x>e.x-4&&s.x<e.x+e.w+4&&s.y>e.y&&s.y<e.y+e.h){hit=true;hitEnemy(e)}});return s.l>0&&!hit});
+ en.forEach(e=>{if(e.dead)return;if(e.inv>0)e.inv--;
+  if(e.t=='w')e.x+=e.d*1.3;
+  else if(e.t=='f'){e.x+=e.d*1.7;e.y=e.by+Math.sin(fr*.07+e.ph)*50}
+  else{e.x+=e.d*(1.6+(1-e.hp/e.mhp)*1.6);if(--e.cd<=0){e.cd=Math.max(45,100-(e.mhp-e.hp)*8);eb.push({x:e.x+e.w/2,y:G-(Math.random()<.5?26:62),vx:(P.x<e.x?-1:1)*5.5});snd(120,.25,'sawtooth',.08,-60)}}
+  if(e.x<e.x0){e.x=e.x0;e.d=1}if(e.x>e.x1){e.x=e.x1;e.d=-1}
+  if(P.x+22>e.x&&P.x+8<e.x+e.w&&P.y+P.h>e.y&&P.y+6<e.y+e.h){
+   if(dashT>0)hitEnemy(e);else if(P.vy>1&&pf<=e.y+18){hitEnemy(e);P.vy=-11;P.jumps=1}else hurt()}});
+ eb=eb.filter(b=>{b.x+=b.vx;const hit=Math.abs(b.x-(P.x+15))<22&&Math.abs(b.y-(P.y+35))<34;if(hit)hurt();return !hit&&b.x>-60&&b.x<L.len+60});
+ parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.2;p.l--});parts=parts.filter(p=>p.l>0);
+ pops.forEach(p=>p.l--);pops=pops.filter(p=>p.l>0);
+ if(P.x>px-20&&open)next()}
+/* ---------- dibujo ---------- */
+const rr=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w,h)};
+function tx(t,x,y,c,s=16,al='left',f='Bebas Neue'){ctx.font=s+'px "'+f+'",Impact,sans-serif';ctx.textAlign=al;ctx.fillStyle=c;ctx.fillText(t,x,y);ctx.textAlign='left'}
+function polygon(pts,c){ctx.fillStyle=c;ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill()}
+function drawBG(L){const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,L.sky[0]);g.addColorStop(1,L.sky[1]);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ ctx.globalAlpha=.22;ctx.fillStyle=L.accent;ctx.beginPath();ctx.arc(760,120,(L.deco==2?150:100)+Math.sin(fr*.02)*8,0,7);ctx.fill();ctx.globalAlpha=1;
+ for(let i=0;i<75;i++)rr((i*137+fr*.12)%W,(i*71)%300,2,2,'#dce9ff');
+ if(L.deco==1){ctx.strokeStyle=L.accent;ctx.lineWidth=3;ctx.globalAlpha=.35;for(let i=0;i<7;i++){const x=((i*190-cam*.3)%1330+1330)%1330-150;ctx.beginPath();ctx.ellipse(x,110+(i*67%190),26+(i%3)*12,50+(i%2)*14,fr*.01+i,0,7);ctx.stroke()}ctx.globalAlpha=1}
+ for(let i=0;i<18;i++){const x=i*62-(cam*.22%62),h=100+(i*47%180);rr(x,350-h,50,h,'#111a31');for(let j=0;j<4;j++)for(let k=0;k<5;k++)if((i+j+k)%3)rr(x+8+k*8,360-h+j*18,3,5,'#e6a8bd55')}
+ for(let i=0;i<13;i++){const x=i*100-(cam*.52%100),h=130+(i*59%155);rr(x,390-h,82,h,'#18213b');rr(x+8,390-h-8,66,8,L.accent);for(let j=0;j<5;j++)for(let k=0;k<3;k++)rr(x+12+k*20,390-h+18+j*24,6,9,(i+j+k+(fr>>5))%3?'#55b8db66':'#fa789166')}
+ if(L.deco==2)for(let i=0;i<22;i++)tx('♥',((i*97+Math.sin(fr*.02+i)*30-cam*.3)%W+W)%W,(fr*.9+i*53)%H,'#ff9ab799',10+i%3*4,'center','sans-serif');
+ rr(0,G,W,H-G,L.ground);rr(0,G,W,5,L.accent);for(let i=0;i<30;i++)rr(i*38-(cam%38),480,18,2,'#8290b855');
+ pits.forEach(p=>{const x=p.x-cam;if(x>W||x+p.w<0)return;const v=ctx.createLinearGradient(0,G,0,H);v.addColorStop(0,'#000');v.addColorStop(1,L.accent+'66');ctx.fillStyle=v;ctx.fillRect(x,G,p.w,H-G);rr(x-3,G,3,H-G,L.accent);rr(x+p.w,G,3,H-G,L.accent)});
+ plats.forEach(p=>{const x=p.x-cam;if(x>W||x+p.w<0)return;rr(x,p.y,p.w,14,'#2a3560');rr(x,p.y,p.w,4,L.accent);rr(x+6,p.y+14,p.w-12,6,'#151c38')})}
+function drawPortal(L,open){const x=L.len-90-cam;if(x<-80||x>W+80)return;ctx.save();ctx.translate(x,G-60);ctx.lineWidth=4;ctx.globalAlpha=open?.9:.4;for(let i=0;i<5;i++){ctx.strokeStyle=open?(i%2?'#29b8ff':'#fa3152'):'#55607a';ctx.beginPath();ctx.ellipse(0,0,22+i*4+Math.sin(fr*.1+i)*3,58+i*2,fr*.03*(i%2?1:-1),0,7);ctx.stroke()}ctx.restore();ctx.globalAlpha=1;if(open)tx('ENTRA',x,G-135,'#ffd6e0',28,'center')}
+function drawItems(){items.forEach(it=>{if(it.got)return;const x=it.x-cam,y=it.y+Math.sin(fr*.07+it.ph)*8;if(x<-40||x>W+40)return;ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(fr*.03+it.ph)*.15);ctx.shadowBlur=18;ctx.shadowColor='#ff9ab7';ctx.fillStyle='#ff9ab7';ctx.beginPath();ctx.moveTo(0,12);ctx.bezierCurveTo(-28,-5,-14,-20,0,-8);ctx.bezierCurveTo(14,-20,28,-5,0,12);ctx.fill();ctx.restore()})}
+function drawEn(e){if(e.dead)return;const x=e.x-cam;if(x<-120||x>W+120)return;ctx.save();ctx.translate(x+e.w/2+Math.sin(fr*.9+e.ph)*1.5,e.y+e.h/2);if(e.inv>0&&fr%6<3)ctx.globalAlpha=.4;
+ const s=e.w/2,hh=e.h/2;ctx.fillStyle='#0a0e1c';ctx.strokeStyle=e.t=='b'?'#ff5a7a':'#fa3152';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,-hh);ctx.lineTo(s,0);ctx.lineTo(0,hh);ctx.lineTo(-s,0);ctx.closePath();ctx.fill();ctx.stroke();
+ const d=e.d>0?2:-2,k=e.t=='b'?2:1;ctx.fillStyle='#fff';ctx.fillRect(-s*.45+d,-6*k,s*.3,s*.3);ctx.fillRect(s*.15+d,-6*k,s*.3,s*.3);
+ if(e.t=='f'){ctx.strokeStyle='#29b8ff';ctx.beginPath();const w=Math.sin(fr*.5)*8;ctx.moveTo(-s,0);ctx.lineTo(-s-16,-10+w);ctx.moveTo(s,0);ctx.lineTo(s+16,-10+w);ctx.stroke()}
+ else if(e.t=='w')tx('!',0,hh*.7,'#fff',16,'center');
+ else{ctx.strokeStyle='#fa3152';ctx.beginPath();ctx.moveTo(-s*.4,hh*.2);for(let i=0;i<6;i++)ctx.lineTo(-s*.4+i*s*.16,hh*(i%2?.2:.45));ctx.stroke();tx('DUDA',0,-hh-8,'#ff9eb4',22,'center')}
+ ctx.restore()}
+function drawHero(){if(P.inv>0&&fr%8<4&&dashT<=0)return;const run=P.on?(Math.abs(P.vx)>.8?Math.sin(fr*.45)*5:0):(P.vy<0?-5:4),fl=Math.sin(fr*.3)*4+Math.abs(P.vx)*1.5;
+ ctx.save();ctx.translate(Math.round(P.x-cam+P.w/2),Math.round(P.y));ctx.scale(P.face,1);ctx.translate(-17,0);
+ polygon([[10,12],[-8-fl,6+fl/2],[-22-fl,22],[-6,26]],'#29b8ff');
+ rr(7,39,9,20+run,'#121a32');rr(20,39,9,20-run,'#121a32');rr(2,54+run,16,6,'#fa3152');rr(18,54-run,16,6,'#fa3152');
+ polygon([[7,12],[27,12],[32,42],[4,42]],'#d9274b');polygon([[8,13],[25,13],[20,31],[13,31]],'#238fc4');
+ ctx.fillStyle='#17233e';ctx.beginPath();ctx.arc(17,5,16,0,7);ctx.fill();polygon([[3,1],[14,-1],[10,5]],'#f5f0ed');polygon([[19,-1],[31,1],[24,5]],'#f5f0ed');
+ ctx.strokeStyle='#f8c7d2';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(17,18);ctx.lineTo(17,34);ctx.moveTo(9,25);ctx.lineTo(25,25);ctx.stroke();tx('♥',17,40,'#ff9ab7',11,'center','sans-serif');ctx.restore()}
+function draw(){const L=levels[level]||levels[0];ctx.save();if(shake>0){ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.85;if(shake<.5)shake=0}
+ drawBG(L);const open=got>=5&&(!L.boss||bossDead);drawPortal(L,open);drawItems();en.forEach(drawEn);
+ ctx.shadowBlur=14;ctx.shadowColor='#fa3152';ctx.fillStyle='#fa3152';eb.forEach(b=>{ctx.beginPath();ctx.arc(b.x-cam,b.y,12,0,7);ctx.fill()});
+ ctx.shadowColor='#29b8ff';ctx.strokeStyle='#dff6ff';ctx.lineWidth=3;shots.forEach(s=>{ctx.beginPath();ctx.moveTo(s.x-cam,s.y);ctx.lineTo(s.x-cam-Math.sign(s.vx)*26,s.y);ctx.stroke()});ctx.shadowBlur=0;
+ if(P)drawHero();
+ parts.forEach(p=>{ctx.globalAlpha=Math.min(1,p.l/20);rr(p.x-cam,p.y,p.s,p.s,p.c)});ctx.globalAlpha=1;
+ pops.forEach(p=>{ctx.font='34px "Bebas Neue",Impact';ctx.textAlign='center';ctx.lineWidth=6;ctx.strokeStyle='#080b17';const y=p.y-(50-p.l)*.8;ctx.strokeText(p.t,p.x-cam,y);ctx.fillStyle=p.c;ctx.fillText(p.t,p.x-cam,y)});ctx.textAlign='left';
+ ctx.restore();
+ tx(L.name,22,34,'#fff',20);rr(22,44,170,5,'#ffffff33');if(P)rr(22,44,170*Math.min(1,P.x/L.len),5,L.accent);
+ tx('PUNTOS '+pts,W-22,34,'#fff',22,'right');
+ if(combo>1)tx('COMBO x'+Math.min(combo,5),W-22,60,'#ffd54a',24,'right');
+ if(mode==='play'){const b=en.find(e=>e.t=='b'&&!e.dead&&Math.abs(e.x-P.x)<700);if(b){rr(W/2-150,500,300,12,'#00000099');rr(W/2-148,502,296*b.hp/b.mhp,8,'#fa3152');tx('GLITCH DE LA DUDA',W/2,494,'#ff9eb4',18,'center')}
+  if(bannerT>0){ctx.globalAlpha=Math.min(1,bannerT/30);rr(W/2-310,70,620,40,'#080b17cc');rr(W/2-310,70,4,40,L.accent);tx(banner,W/2,96,'#ffe3ea',17,'center','Space Grotesk');ctx.globalAlpha=1}}}
+function loop(){fr++;update();draw();requestAnimationFrame(loop)}
+resetLevel();mode='menu';loop();
+</script></body></html>
